@@ -1,88 +1,75 @@
 import os
+import sys
 import pathlib
 from prompt_toolkit import PromptSession
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.key_binding import KeyBindings
 from pygments.lexers import get_lexer_by_name
 
+
 class IDE:
-    # input do arquivo a editar
+    # Editor com realce de sintaxe no terminal
     
-    # detectar o tipo de arquivo e linguagem
-
-    # abrir arquivo no terminal para edição
-
-    # usar a lib rich para destacar a sintaxe de acordo com a linguagem
-
-    # ctrl+s para salvar e voltar ao terminal
+    LANGUAGES = {
+        '.py': 'python', '.js': 'javascript', '.ts': 'typescript', '.jsx': 'jsx',
+        '.tsx': 'typescript', '.java': 'java', '.c': 'c', '.cpp': 'cpp', '.cs': 'csharp',
+        '.php': 'php', '.rb': 'ruby', '.go': 'go', '.rs': 'rust', '.swift': 'swift',
+        '.html': 'html', '.css': 'css', '.scss': 'scss', '.json': 'json', '.xml': 'xml',
+        '.yaml': 'yaml', '.yml': 'yaml', '.md': 'markdown', '.sh': 'bash', '.sql': 'sql',
+    }
     
-    def __init__(self):
-        self.language_map = {
-            '.py': 'python',
-            '.js': 'javascript',
-            '.ts': 'typescript',
-            '.html': 'html',
-            '.css': 'css',
-            '.json': 'json',
-            '.md': 'markdown',
-            '.sh': 'bash',
-            '.sql': 'sql',
-            '.xml': 'xml',
-            '.yaml': 'yaml',
-            '.yml': 'yaml',
-            # Add more as needed
-        }
+    # Detecta linguagem pela extensão
+    def detect_language(self, path):
+        ext = pathlib.Path(path).suffix.lower()
+        return self.LANGUAGES.get(ext, 'text')
     
-    def detect_language(self, file_path):
-        ext = pathlib.Path(file_path).suffix.lower()
-        return self.language_map.get(ext, 'text')
+    # Carrega arquivo
+    def load_file(self, path):
+        return [] if not os.path.exists(path) else open(path, 'r', encoding='utf-8').read().splitlines()
     
-    def load_file(self, file_path):
-        if not os.path.exists(file_path):
-            return []
-        with open(file_path, 'r', encoding='utf-8') as f:
-            return f.read().splitlines()
-    
-    def save_file(self, file_path, lines):
-        with open(file_path, 'w', encoding='utf-8') as f:
+    # Salva arquivo
+    def save_file(self, path, lines):
+        with open(path, 'w', encoding='utf-8') as f:
             f.write('\n'.join(lines))
     
-    def edit(self, file_path):
-        language = self.detect_language(file_path)
-        lines = self.load_file(file_path)
-        content = '\n'.join(lines)
-        
-        print(f"Linguagem detectada: {language}")
-        
+    # Configura lexer para realce
+    def _get_lexer(self, lang):
         try:
-            pygments_lexer = get_lexer_by_name(language)
-            lexer = PygmentsLexer(pygments_lexer())
+            if lang != 'text':
+                lex_inst = get_lexer_by_name(lang)
+                return PygmentsLexer(lex_inst.__class__)
         except Exception as e:
-            print(f"Erro no lexer: {e}")
-            lexer = None
+            print(f"Erro lexer: {e}")
+        return None
+    
+    # Abre arquivo para edição
+    def edit(self, path):
+        lang = self.detect_language(path)
+        content = '\n'.join(self.load_file(path))
+        print(f"Linguagem: {lang}")
         
         kb = KeyBindings()
-        
         @kb.add('c-s')
-        def save_and_exit(event):
-            event.app.exit(result=event.app.current_buffer.text)
+        def save_exit(e):
+            e.app.exit(result=e.app.current_buffer.text)
         
-        session = PromptSession(lexer=lexer, multiline=True, key_bindings=kb)
-        print("Editando o arquivo. Pressione Ctrl+S para salvar e sair, ou Ctrl+D.")
+        print("Ctrl+S: salvar | Ctrl+D: sair")
         try:
-            new_content = session.prompt("", default=content)
-            new_lines = new_content.splitlines()
-            self.save_file(file_path, new_lines)
-            print("Arquivo salvo!")
+            new_content = PromptSession(lexer=self._get_lexer(lang), multiline=True, key_bindings=kb).prompt("", default=content)
+            self.save_file(path, new_content.splitlines())
+            print("Salvo!")
         except KeyboardInterrupt:
-            print("Edição cancelada.")
+            print("Cancelado.")
         except EOFError:
-            print("Edição finalizada.")
+            print("Finalizado.")
 
-if __name__ == "__main__":
-    import sys
+
+def main():
     if len(sys.argv) > 1:
-        ide = IDE()
-        ide.edit(sys.argv[1])
+        IDE().edit(sys.argv[1])
     else:
         print("Uso: python ide.py <arquivo>")
+
+
+if __name__ == "__main__":
+    main()

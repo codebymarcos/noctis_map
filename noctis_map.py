@@ -1,12 +1,6 @@
-# funçoes facilmente reutilizaveis para o projeto noctis_map
+# CLI para noctis_map - ferramentas de visualização e edição de projetos
 
-from core import scan, view, ide
+from cli import main
 
-def scan_map(data):
-    return scan(data)
-
-def view_map(map_data):
-    return view(map_data)
-
-def ide_map(map_data):
-    return ide(map_data)
+if __name__ == "__main__":
+    main()
