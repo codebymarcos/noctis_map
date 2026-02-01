@@ -8,8 +8,8 @@ from rich.console import Console
 # Adiciona diretório pai ao path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from commands import scan, view, ide
-from art import get_logo
+from .commands import scan, view, ide
+from .art import get_logo
 
 console = Console()
 
